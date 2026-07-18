@@ -1,0 +1,78 @@
+<div class="order-history-container">
+  @if (!getIsAuthenticated()) {
+    <div class="auth-required">
+      <h2>Please Login to Continue</h2>
+      <p>You need to be logged in to view your order history.</p>
+      <button (click)="navigateToLogin()" class="btn btn-primary">Login</button>
+    </div>
+  } @else {
+    <div class="order-history-header">
+      <h1>🛒 Order History</h1>
+      <div class="header-actions">
+        <button (click)="navigateToDashboard()" class="nav-btn">Back to Dashboard</button>
+        <button (click)="logout()" class="logout-btn">Logout</button>
+      </div>
+    </div>
+
+    <div class="api-error-message" *ngIf="errorMessage()">
+      {{ errorMessage() }}
+    </div>
+
+    <div class="order-history-content">
+    <div class="order-history-section">
+      <h2>Last 5 Orders</h2>
+      <div class="order-history-list" *ngIf="!isLoading()">
+        @for(order of orderHistory(); track order.orderGroupId) {
+          <div class="order-history-card" [class.expiring-soon]="getOrderExpiryStatus(order).class === 'expiring-soon'" [class.expired]="getOrderExpiryStatus(order).class === 'expired'">
+            <div class="order-summary">
+              <div class="order-info">
+                <h3>Order #{{ order.orderGroupId }}</h3>
+                <p class="item-count">{{ order.itemCount }} {{ order.itemCount === 1 ? 'item' : 'items' }}</p>
+                <p class="order-date">Order Date: {{ order.orderDate | date:'medium' }}</p>
+                <p class="total-amount">Total: ₹{{ order.totalAmount.toFixed(2) }}</p>
+              </div>
+              <div class="order-status">
+                <span class="status-badge {{ getOrderExpiryStatus(order).class }}">{{ getOrderExpiryStatus(order).status }}</span>
+                @if(order.itemCount > 1) {
+                  <button (click)="toggleOrderExpansion(order.orderGroupId)" class="view-details-btn">
+                    {{ isOrderExpanded(order.orderGroupId) ? 'Hide Details' : 'View Details' }}
+                  </button>
+                }
+              </div>
+            </div>
+            @if(isOrderExpanded(order.orderGroupId) || order.itemCount === 1) {
+              <div class="order-items-details">
+                @for(item of order.items; track item.orderId) {
+                  <div class="order-item-row" [class.expiring-soon]="isExpiringSoon(item.expiryDate)" [class.expired]="isExpired(item.expiryDate)">
+                    <div class="item-details">
+                      <p class="item-name">{{ item.itemName }}</p>
+                      <p class="item-quantity">Qty: {{ item.quantity }}</p>
+                      <p class="item-price">₹{{ item.price.toFixed(2) }}</p>
+                    </div>
+                    <div class="item-expiry-status">
+                      <p class="expiry-date">Expiry: {{ item.expiryDate | date:'mediumDate' }}</p>
+                      @if(isExpired(item.expiryDate)) {
+                        <span class="item-status-badge expired">Expired</span>
+                      } @else if(isExpiringSoon(item.expiryDate)) {
+                        <span class="item-status-badge expiring-soon">Expiring Soon</span>
+                      } @else {
+                        <span class="item-status-badge active">Active</span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+      <div class="loading" *ngIf="isLoading()">
+        Loading order history...
+      </div>
+      <div class="no-orders" *ngIf="!isLoading() && orderHistory().length === 0">
+        No order history found
+      </div>
+    </div>
+  </div>
+  }
+</div>
